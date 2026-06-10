@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>For My Dearest ❤️</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Dancing+Script:wght@500;700&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --bg-deep:   #0a0012;
+    --bg-mid:    #150020;
+    --rose:      #ff6b9d;
+    --rose-light:#ffb3cc;
+    --lavender:  #c084fc;
+    --gold:      #ffd700;
+    --gold-soft: #ffe066;
+    --white:     #fff;
+    --glass-bg:  rgba(255,255,255,0.06);
+    --glass-border: rgba(255,255,255,0.15);
+    --text-main: #f9e6ff;
+    --text-muted:#c8a8d8;
+  }
+
+  html, body {
+    width:100%; min-height:100vh;
+    background: radial-gradient(ellipse at 30% 20%, #200035 0%, var(--bg-deep) 60%);
+    color: var(--text-main);
+    font-family: 'Lato', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── CURSOR GLOW ── */
+  #cursor-glow {
+    pointer-events:none;
+    position:fixed; top:0; left:0;
+    width:380px; height:380px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(192,132,252,0.12) 0%, transparent 70%);
+    transform: translate(-50%,-50%);
+    transition: transform 0.08s linear;
+    z-index:0;
+  }
+
+  /* ── CANVAS (hearts / particles) ── */
+  #bg-canvas { position:fixed; inset:0; z-index:1; pointer-events:none; }
+
+  /* ── SCREENS ── */
+  .screen {
+    position:fixed; inset:0; z-index:10;
+    display:flex; align-items:center; justify-content:center;
+    padding:1.5rem;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.7s ease;
+  }
+  .screen.active { opacity:1; pointer-events:all; }
+
+  /* ── GLASS CARD ── */
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    padding: 3rem 2.8rem;
+    max-width: 560px; width:100%;
+    box-shadow: 0 8px 60px rgba(192,132,252,0.18), 0 0 0 1px rgba(255,255,255,0.05) inset;
+    text-align:center;
+    position:relative; overflow:hidden;
+  }
+  .card::before {
+    content:'';
+    position:absolute; inset:0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+    border-radius:28px;
+    pointer-events:none;
+  }
+
+  /* ── LOADING SCREEN ── */
+  #screen-loading { z-index:100; background: var(--bg-deep); }
+  .loader-ring {
+    width:72px; height:72px;
+    border-radius:50%;
+    border:3px solid rgba(255,107,157,0.2);
+    border-top-color: var(--rose);
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1.6rem;
+  }
+  .loader-text {
+    font-family:'Dancing Script', cursive;
+    font-size:1.5rem; color:var(--rose-light);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes spin  { to { transform:rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+  /* ── OPENING SCREEN ── */
+  #screen-open .hi {
+    font-family:'Playfair Display', serif;
+    font-size:clamp(2.6rem,8vw,4.2rem);
+    font-weight:700;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--lavender) 60%, var(--gold) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin-bottom:1rem;
+    animation: fadeSlideDown 0.9s ease forwards;
+  }
+  #screen-open .sub {
+    font-size:1.12rem; color:var(--text-muted);
+    line-height:1.7; margin-bottom:0.6rem;
+    animation: fadeSlideDown 1.1s 0.2s ease both;
+  }
+  #screen-open .note {
+    font-size:0.95rem; color:var(--lavender);
+    margin-bottom:2.4rem;
+    animation: fadeSlideDown 1.1s 0.4s ease both;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display:inline-block; padding:0.9rem 2.8rem;
+    background: linear-gradient(135deg, var(--rose) 0%, #b052e8 100%);
+    border:none; border-radius:50px;
+    color:#fff; font-size:1.08rem; font-weight:700;
+    letter-spacing:0.04em;
+    cursor:pointer;
+    box-shadow: 0 4px 30px rgba(255,107,157,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    font-family:'Lato', sans-serif;
+  }
+  .btn-primary:hover {
+    transform:translateY(-3px) scale(1.04);
+    box-shadow:0 8px 40px rgba(255,107,157,0.55);
+  }
+  .btn-primary:active { transform:scale(0.97); }
+
+  /* ── QUESTION SCREEN ── */
+  #screen-question { flex-direction:column; gap:1.4rem; }
+
+  /* ── PROGRESS ── */
+  .progress-wrap {
+    width:100%; max-width:560px;
+    position:relative;
+  }
+  .progress-label {
+    display:flex; justify-content:space-between;
+    font-size:0.82rem; color:var(--text-muted);
+    margin-bottom:0.55rem; letter-spacing:0.06em;
+  }
+  .progress-bar-track {
+    height:5px; border-radius:10px;
+    background:rgba(255,255,255,0.1);
+    overflow:hidden;
+  }
+  .progress-bar-fill {
+    height:100%; border-radius:10px;
+    background: linear-gradient(90deg, var(--rose), var(--lavender));
+    transition: width 0.6s cubic-bezier(.23,1,.32,1);
+  }
+
+  /* ── QUESTION CARD ── */
+  .q-label {
+    font-size:0.75rem; letter-spacing:0.18em; color:var(--lavender);
+    text-transform:uppercase; margin-bottom:1.1rem; font-weight:700;
+  }
+  .q-text {
+    font-family:'Playfair Display', serif;
+    font-size:clamp(1.35rem,4.5vw,1.85rem);
+    font-weight:700; line-height:1.4;
+    margin-bottom:2.2rem;
+    background: linear-gradient(135deg, var(--white) 0%, var(--rose-light) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+
+  /* ── YES / NO BUTTONS ── */
+  .answer-btns {
+    display:flex; gap:1.2rem; justify-content:center;
+    position:relative; min-height:60px;
+  }
+  .btn-yes, .btn-no {
+    padding:0.82rem 2.2rem; border-radius:50px;
+    border:none; font-size:1.05rem; font-weight:700;
+    cursor:pointer; font-family:'Lato', sans-serif;
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing:0.03em;
+  }
+  .btn-yes {
+    background: linear-gradient(135deg, #ff6b9d, #e040fb);
+    color:#fff;
+    box-shadow:0 4px 24px rgba(255,107,157,0.4);
+  }
+  .btn-yes:hover { transform:scale(1.08); box-shadow:0 8px 36px rgba(255,107,157,0.6); }
+  .btn-no {
+    background: rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.2);
+    color:var(--text-muted);
+    position:absolute;
+    white-space:nowrap;
+    transition: left 0.15s ease, top 0.15s ease, transform 0.2s;
+  }
+  .btn-no:hover { background:rgba(255,255,255,0.15); }
+
+  /* ── FUNNY MSG ── */
+  .funny-msg {
+    font-size:0.88rem; color:var(--gold);
+    min-height:1.3em; margin-top:0.6rem;
+    font-style:italic;
+    transition:opacity 0.3s;
+  }
+
+  /* ── SHAYARI CARD ── */
+  .shayari-card {
+    background: linear-gradient(135deg, rgba(192,132,252,0.1) 0%, rgba(255,107,157,0.08) 100%);
+    border:1px solid rgba(192,132,252,0.3);
+    border-radius:20px; padding:2rem 1.8rem;
+    position:relative;
+  }
+  .shayari-card::before {
+    content:'"';
+    position:absolute; top:-0.5rem; left:1.2rem;
+    font-family:'Playfair Display', serif;
+    font-size:5rem; color:var(--rose); opacity:0.2;
+    line-height:1;
+  }
+  .shayari-text {
+    font-family:'Dancing Script', cursive;
+    font-size:clamp(1.15rem,3.5vw,1.45rem);
+    line-height:1.9; color:var(--text-main);
+    position:relative; z-index:1;
+  }
+  .shayari-text .heart-char { color:var(--rose); }
+
+  /* ── FINAL / THANK YOU ── */
+  #screen-final .big-heart {
+    font-size:5.5rem; display:block;
+    animation: heartbeat 1.2s ease-in-out infinite;
+    margin-bottom:1.2rem;
+  }
+  @keyframes heartbeat {
+    0%,100%{transform:scale(1)}
+    14%{transform:scale(1.22)}
+    28%{transform:scale(1)}
+    42%{transform:scale(1.14)}
+    70%{transform:scale(1)}
+  }
+  .final-title {
+    font-family:'Playfair Display', serif;
+    font-size:clamp(2rem,7vw,3rem); font-weight:700;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--lavender) 60%, var(--gold) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; margin-bottom:0.9rem;
+  }
+  .final-sub { font-size:1rem; color:var(--text-muted); margin-bottom:2rem; }
+
+  /* ── MESSAGE BOX ── */
+  .msg-textarea {
+    width:100%;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:16px; color:var(--text-main);
+    font-family:'Lato', sans-serif; font-size:1rem;
+    padding:1rem 1.2rem; resize:vertical; min-height:110px;
+    outline:none; transition: border 0.25s;
+    margin-bottom:0.6rem;
+  }
+  .msg-textarea::placeholder { color:rgba(200,168,216,0.55); }
+  .msg-textarea:focus { border-color:var(--rose); box-shadow:0 0 0 3px rgba(255,107,157,0.12); }
+  .msg-error {
+    color:var(--rose); font-size:0.85rem; min-height:1.2em;
+    margin-bottom:1rem; display:none;
+  }
+  .msg-error.show { display:block; }
+
+  /* ── DONE SCREEN ── */
+  #screen-done .done-title {
+    font-family:'Playfair Display', serif;
+    font-size:clamp(1.6rem,5vw,2.4rem);
+    font-weight:700; margin-bottom:1rem;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--rose-light) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  #screen-done p {
+    font-size:1.05rem; color:var(--text-muted); line-height:1.8;
+  }
+
+  /* ── SHAYARI INTERLUDE SCREEN ── */
+  #screen-shayari { z-index:12; }
+  .shayari-interlude-card { max-width:520px; }
+  .shayari-interlude-card .shayari-text { font-size:clamp(1.1rem,3.5vw,1.4rem); }
+  .btn-continue {
+    margin-top:1.8rem;
+    display:inline-block; padding:0.78rem 2.4rem;
+    background:linear-gradient(135deg, rgba(192,132,252,0.35), rgba(255,107,157,0.3));
+    border:1px solid rgba(192,132,252,0.4); border-radius:50px;
+    color:var(--text-main); font-size:0.95rem; font-weight:700;
+    cursor:pointer; font-family:'Lato', sans-serif;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-continue:hover { transform:translateY(-2px); box-shadow:0 6px 28px rgba(192,132,252,0.3); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeSlideDown {
+    from { opacity:0; transform:translateY(-18px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity:0; transform:translateY(22px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .anim-up { animation: fadeSlideUp 0.6s ease forwards; }
+
+  /* ── HEART BURST ── */
+  .heart-burst-particle {
+    position:fixed; pointer-events:none; z-index:999;
+    font-size:1.3rem; animation: burstOut 0.9s ease-out forwards;
+    will-change:transform, opacity;
+  }
+  @keyframes burstOut {
+    0%   { transform:translate(0,0) scale(0.4); opacity:1; }
+    100% { transform:translate(var(--tx),var(--ty)) scale(1.1); opacity:0; }
+  }
+
+  /* ── CONFETTI ── */
+  .confetti-piece {
+    position:fixed; top:-10px; pointer-events:none; z-index:998;
+    animation: confettiFall var(--dur) var(--delay) linear forwards;
+    border-radius:2px;
+    will-change:transform, opacity;
+  }
+  @keyframes confettiFall {
+    0%   { transform:translateY(0) rotate(0deg); opacity:1; }
+    85%  { opacity:1; }
+    100% { transform:translateY(110vh) rotate(var(--rot)); opacity:0; }
+  }
+
+  /* ── MOBILE tweaks ── */
+  @media(max-width:480px) {
+    .card { padding:2.2rem 1.5rem; border-radius:20px; }
+    .answer-btns { justify-content:center; }
+  }
+
+  /* ── DOTS DECORATION ── */
+  .dot-accent {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--rose); opacity:0.5;
+    display:inline-block; margin:0 5px;
+    vertical-align:middle;
+  }
+
+  /* ── SUMMARY (hidden) ── */
+  #hidden-summary { display:none; }
+</style>
+</head>
+<body>
+
+<div id="cursor-glow"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══════════════════════════════════════════
+     LOADING SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-loading">
+  <div style="text-align:center;">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Preparing something special...</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     OPENING SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-open">
+  <div class="card">
+    <div class="hi">Hi For My Dearest ❤️</div>
+    <p class="sub">For My Dearest, I wanted to ask you a few things...</p>
+    <p class="note">Please answer honestly 😊</p>
+    <button class="btn-primary" onclick="startQuestions()">Begin ✨</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     QUESTION SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-question">
+  <div class="progress-wrap" id="progress-wrap" style="margin-bottom:-0.5rem;">
+    <div class="progress-label">
+      <span id="prog-label">Question 1 of 15</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="card" id="q-card">
+    <div class="q-label">For My Dearest, with love ❤️</div>
+    <div class="q-text" id="q-text">Question goes here</div>
+    <div class="answer-btns" id="answer-btns">
+      <button class="btn-yes" id="btn-yes" onclick="answerYes()">YES ❤️</button>
+      <button class="btn-no" id="btn-no" onmouseenter="dodgeNo(event)" onclick="tryNo()">NO 😅</button>
+    </div>
+    <div class="funny-msg" id="funny-msg"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SHAYARI INTERLUDE SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-shayari">
+  <div class="card shayari-interlude-card">
+    <div class="shayari-card">
+      <div class="shayari-text" id="shayari-text"></div>
+    </div>
+    <button class="btn-continue" onclick="continueAfterShayari()">Continue ✨</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FINAL SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-final">
+  <div class="card" style="max-width:580px;">
+    <span class="big-heart">❤️</span>
+    <div class="final-title">Thank You, Dearest ❤️</div>
+    <p class="final-sub">You're almost done — one last thing, For My Dearest...</p>
+    <p style="color:var(--text-muted);margin-bottom:1.4rem;font-size:0.97rem;">
+      Before you leave, I would love to hear something from you...
+    </p>
+    <textarea class="msg-textarea" id="anushka-msg" placeholder="Write anything you want, For My Dearest..."></textarea>
+    <div class="msg-error" id="msg-error">For My Dearest, please write something — even a single word 🙏</div>
+    <button class="btn-primary" onclick="submitMessage()" style="width:100%;">Submit My Message ❤️</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     DONE SCREEN
+══════════════════════════════════════════════ -->
+<div class="screen" id="screen-done">
+  <div class="card">
+    <span style="font-size:3.5rem;display:block;margin-bottom:1rem;animation:heartbeat 1.5s ease-in-out infinite;">🌹</span>
+    <div class="done-title">Thank you, For My Dearest.</div>
+    <p>Your words are precious and will always be appreciated. ❤️</p>
+    <p style="margin-top:1.2rem;font-size:0.88rem;color:rgba(200,168,216,0.5);">
+      This was made just for you &mdash; with all the heart in the world.
+    </p>
+  </div>
+</div>
+
+<!-- Hidden data element -->
+<div id="hidden-summary"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIGURATION
+═══════════════════════════════════════════ */
+
+// ── PASTE YOUR ENDPOINT HERE ──────────────────────────────────────────────
+// Option A: Formspree  → https://formspree.io/f/YOUR_ID
+// Option B: Google Apps Script Web App → your deployed URL
+// Option C: Any JSON-accepting endpoint
+const WEBHOOK_URL = "https://formspree.io/f/xqeollwg";
+// ─────────────────────────────────────────────────────────────────────────
+
+/* ═══════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════ */
+const QUESTIONS = [
+  { id:"q1",  text:"Do you think I'm a good person?"              },
+  { id:"q2",  text:"Do you enjoy spending time with me?"           },
+  // shayari A after q2
+  { id:"q3",  text:"Do you trust me?"                              },
+  { id:"q4",  text:"Do I make you smile sometimes?"                },
+  // shayari B after q4
+  { id:"q5",  text:"Do you think we know each other well?"         },
+  { id:"q6",  text:"Do you miss me when we don't talk?"            },
+  // shayari C after q6
+  { id:"q7",  text:"Do you like talking to me every day?"          },
+  { id:"q8",  text:"Have I ever made your day better?"             },
+  // shayari D after q8
+  { id:"q9",  text:"Would you like to spend more time with me?"    },
+  { id:"q10", text:"Do you think I'm special to you?"              },
+  { id:"q11", text:"Do you feel happy when my message appears?"    },
+  { id:"q12", text:"Would you like to know me even better?"        },
+  // shayari E after q12
+  { id:"q13", text:"Do you think we share a good connection?"      },
+  { id:"q14", text:"Have I ever surprised you in a good way?"      },
+  { id:"q15", text:"Would you like us to create more memories together?" },
+];
+
+const SHAYARIS = {
+  2: `कुछ बातें अल्फ़ाज़ों में नहीं आतीं,\nकुछ एहसास यूँ ही दिल में रह जाते हैं,\nऔर कुछ लोग...\nबस खास बन जाते हैं। ❤️`,
+  4: `जब भी तुम्हारा नाम आता है,\nचेहरे पर मुस्कान आ जाती है,\nशायद यही वजह है कि\nकुछ लोग दिल के करीब हो जाते हैं। ✨`,
+  6: `रिश्तों की खूबसूरती शब्दों में नहीं,\nएहसासों में होती है,\nऔर कुछ लोग...\nबिना वजह भी अच्छे लगते हैं। ❤️`,
+  8: `कभी-कभी एक इंसान की मौजूदगी ही\nदिन को बेहतर बना देती है। 🌹`,
+  12:`हर मुलाकात की अपनी एक कहानी होती है,\nऔर कुछ कहानियां दिल में बस जाती हैं। ❤️`,
+};
+
+const FUNNY_MSGS = [
+  "Are you sure? 😄",
+  "Think again 😜",
+  "Oops, missed me 😂",
+  "Nice try Anushka 😅",
+  "Not so easy 😎",
+  "Come on Anushka! 🥺",
+  "You know you want to say Yes 😏",
+];
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let currentQ       = 0;       // index in QUESTIONS
+let answers        = {};      // { q1:"Yes", q2:"No", ... }
+let pendingShayari = false;   // are we about to show a shayari?
+let noClickCount   = 0;
+
+/* ═══════════════════════════════════════════
+   CANVAS — floating hearts / particles
+═══════════════════════════════════════════ */
+(function initCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, particles;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function mkParticle() {
+    const types = ['❤', '✦', '˚', '·', '✿'];
+    return {
+      x    : Math.random() * W,
+      y    : H + 10,
+      vx   : (Math.random() - 0.5) * 0.5,
+      vy   : -(0.4 + Math.random() * 0.9),
+      size : 8 + Math.random() * 14,
+      alpha: 0.1 + Math.random() * 0.35,
+      type : types[Math.floor(Math.random() * types.length)],
+      color: Math.random() > 0.5 ? '#ff6b9d' : '#c084fc',
+    };
+  }
+
+  function init() {
+    resize();
+    particles = Array.from({length: 38}, mkParticle);
+    particles.forEach(p => { p.y = Math.random() * H; });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach((p, i) => {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle   = p.color;
+      ctx.font        = `${p.size}px serif`;
+      ctx.fillText(p.type, p.x, p.y);
+      ctx.restore();
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.y < -20) { particles[i] = mkParticle(); }
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); });
+  init(); draw();
+})();
+
+/* ═══════════════════════════════════════════
+   CURSOR GLOW
+═══════════════════════════════════════════ */
+const glow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => {
+  glow.style.transform = `translate(${e.clientX - 190}px, ${e.clientY - 190}px)`;
+});
+
+/* ═══════════════════════════════════════════
+   SCREEN MANAGEMENT
+═══════════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  const el = document.getElementById(id);
+  if (el) {
+    // micro-delay for transition
+    requestAnimationFrame(() => el.classList.add('active'));
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LOADING → OPEN
+═══════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => { showScreen('screen-open'); }, 1800);
+});
+
+/* ═══════════════════════════════════════════
+   START
+═══════════════════════════════════════════ */
+function startQuestions() {
+  currentQ = 0;
+  showScreen('screen-question');
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════════
+   RENDER QUESTION
+═══════════════════════════════════════════ */
+function renderQuestion() {
+  const q     = QUESTIONS[currentQ];
+  const total = QUESTIONS.length;
+  const pct   = Math.round((currentQ / total) * 100);
+
+  document.getElementById('prog-label').textContent = `Question ${currentQ + 1} of ${total}`;
+  document.getElementById('prog-pct').textContent   = `${pct}%`;
+  document.getElementById('prog-bar').style.width   = `${pct}%`;
+  document.getElementById('q-text').textContent     = q.text;
+  document.getElementById('funny-msg').textContent  = '';
+
+  // Reset NO button position
+  const btnNo = document.getElementById('btn-no');
+  btnNo.style.position = 'relative';
+  btnNo.style.left     = 'auto';
+  btnNo.style.top      = 'auto';
+  btnNo.style.transform = '';
+  noClickCount = 0;
+
+  // Animate card in
+  const card = document.getElementById('q-card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeSlideUp 0.5s ease forwards';
+}
+
+/* ═══════════════════════════════════════════
+   ANSWER YES
+═══════════════════════════════════════════ */
+function answerYes() {
+  const q = QUESTIONS[currentQ];
+  answers[q.id] = "Yes";
+  heartBurst();
+  advanceFlow();
+}
+
+/* ═══════════════════════════════════════════
+   NO BUTTON DODGE
+═══════════════════════════════════════════ */
+function dodgeNo(e) {
+  const btn  = document.getElementById('btn-no');
+  const wrap = document.getElementById('answer-btns');
+  const wRect = wrap.getBoundingClientRect();
+
+  btn.style.position = 'fixed';
+
+  const bW = btn.offsetWidth;
+  const bH = btn.offsetHeight;
+
+  let nx, ny, attempts = 0;
+  do {
+    nx = Math.random() * (window.innerWidth  - bW - 20) + 10;
+    ny = Math.random() * (window.innerHeight - bH - 20) + 10;
+    attempts++;
+  } while (attempts < 20 && Math.hypot(nx - e.clientX, ny - e.clientY) < 120);
+
+  btn.style.left = nx + 'px';
+  btn.style.top  = ny + 'px';
+
+  const msgs = FUNNY_MSGS;
+  const fmsg = document.getElementById('funny-msg');
+  fmsg.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+}
+
+function tryNo() {
+  // If somehow clicked, count it as hesitation but still show funny msg
+  noClickCount++;
+  const fmsg = document.getElementById('funny-msg');
+  fmsg.textContent = FUNNY_MSGS[noClickCount % FUNNY_MSGS.length];
+  dodgeNo({ clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
+}
+
+/* ═══════════════════════════════════════════
+   ADVANCE FLOW (question → shayari → next q)
+═══════════════════════════════════════════ */
+function advanceFlow() {
+  const qNum  = currentQ + 1; // 1-based number of question just answered
+  currentQ++;
+
+  if (SHAYARIS[qNum]) {
+    // Show shayari before next question
+    document.getElementById('shayari-text').innerHTML =
+      SHAYARIS[qNum].replace(/\n/g, '<br>');
+    showScreen('screen-shayari');
+    return;
+  }
+
+  if (currentQ >= QUESTIONS.length) {
+    finishQuestions();
+    return;
+  }
+  showScreen('screen-question');
+  renderQuestion();
+}
+
+function continueAfterShayari() {
+  if (currentQ >= QUESTIONS.length) {
+    finishQuestions();
+    return;
+  }
+  showScreen('screen-question');
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════════
+   FINISH ALL QUESTIONS
+═══════════════════════════════════════════ */
+function finishQuestions() {
+  buildSummary();
+  launchConfetti();
+  showScreen('screen-final');
+}
+
+/* ═══════════════════════════════════════════
+   HEART BURST ANIMATION
+═══════════════════════════════════════════ */
+function heartBurst() {
+  const cx = window.innerWidth  / 2;
+  const cy = window.innerHeight / 2;
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'heart-burst-particle';
+    el.textContent = Math.random() > 0.3 ? '❤️' : '✨';
+    const angle = (i / count) * 2 * Math.PI;
+    const dist  = 80 + Math.random() * 130;
+    el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+    el.style.left = cx + 'px';
+    el.style.top  = cy + 'px';
+    el.style.animationDuration = (0.7 + Math.random() * 0.5) + 's';
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+/* ═══════════════════════════════════════════
+   CONFETTI
+═══════════════════════════════════════════ */
+function launchConfetti() {
+  const colors = ['#ff6b9d','#c084fc','#ffd700','#fff','#e040fb','#ff9ecc'];
+  const count  = 90;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left     = Math.random() * 100 + 'vw';
+    el.style.width    = (5 + Math.random() * 8)  + 'px';
+    el.style.height   = (8 + Math.random() * 10) + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.setProperty('--dur',   (2.2 + Math.random() * 2.5) + 's');
+    el.style.setProperty('--delay', (Math.random() * 1.8) + 's');
+    el.style.setProperty('--rot',   (Math.random() * 720 - 360) + 'deg');
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SUMMARY + HIDDEN JSON
+═══════════════════════════════════════════ */
+function buildSummary() {
+  const summary = {
+    meta: {
+      submittedAt  : new Date().toISOString(),
+      userAgent    : navigator.userAgent,
+      language     : navigator.language,
+      screenSize   : `${screen.width}x${screen.height}`,
+    },
+    answers,
+    message: "",    // filled on submit
+  };
+  document.getElementById('hidden-summary').textContent = JSON.stringify(summary, null, 2);
+  return summary;
+}
+
+/* ═══════════════════════════════════════════
+   SUBMIT MESSAGE
+═══════════════════════════════════════════ */
+async function submitMessage() {
+  const msg = document.getElementById('anushka-msg').value.trim();
+  const errEl = document.getElementById('msg-error');
+
+  if (!msg) {
+    errEl.classList.add('show');
+    document.getElementById('anushka-msg').focus();
+    return;
+  }
+  errEl.classList.remove('show');
+
+  // Attach message to answers
+  answers['personalMessage'] = msg;
+
+  const payload = {
+    meta: {
+      submittedAt : new Date().toISOString(),
+      userAgent   : navigator.userAgent,
+      language    : navigator.language,
+      screenSize  : `${screen.width}x${screen.height}`,
+      timezone    : Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    answers,
+  };
+
+  // Update hidden element
+  document.getElementById('hidden-summary').textContent = JSON.stringify(payload, null, 2);
+
+  // ── SEND TO ENDPOINT ──────────────────────────────────────────────────
+  // Replace WEBHOOK_URL at the top with your actual endpoint to activate.
+  if (WEBHOOK_URL && WEBHOOK_URL.startsWith("https://")) {
+    try {
+      await fetch(WEBHOOK_URL, {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(payload),
+      });
+    } catch(err) {
+      // Silent fail — we still show the thank-you screen
+      console.warn('Webhook send failed:', err);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
+  launchConfetti();
+  showScreen('screen-done');
+}
+</script>
+</body>
+</html>
